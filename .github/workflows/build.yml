@@ -25,6 +25,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt SimConnect pyinstaller pytest
 
+      - name: Stamp version from tag
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}".TrimStart("v")
+          (Get-Content flyroll/__init__.py) -replace '__version__ = ".*"', "__version__ = `"$v`"" | Set-Content flyroll/__init__.py
+          Select-String '__version__' flyroll/__init__.py
+
       - name: Run tests
         run: python -m pytest tests -q
         env:
@@ -51,9 +59,13 @@ jobs:
         with:
           name: FlyRoll ${{ github.ref_name }}
           files: ${{ env.ZIP_NAME }}
+          generate_release_notes: true
           body: |
             **Download `${{ env.ZIP_NAME }}`**, extract it anywhere and run `FlyRoll\FlyRoll.exe`
             (MSFS 2020 / 2024 must be running). No Python needed.
+
+            Already have FlyRoll 1.1 or newer? It offers this update by itself on startup
+            (green "Update" button), downloads it and restarts - logbook and profiles are kept.
 
             Try it without the simulator: `FlyRoll.exe --demo fenix`.
             See the README for what's recorded and the aircraft profiles.

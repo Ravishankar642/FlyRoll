@@ -98,6 +98,26 @@ Pushing the folder to GitHub also builds the exe automatically (`.github/workflo
 **Try it without the simulator:** `run.bat --demo fenix` (or `a350`, `a380`, `c172`) starts a built-in mock aircraft
 that behaves like a FADEC airliner, so you can record, replay and watch the engines spool.
 
+## Updates
+
+FlyRoll checks GitHub for a newer release a few seconds after it starts. When one exists a green
+**⬆ Update to vX.Y.Z** button appears in the header: it shows the release notes, downloads the zip
+(size and SHA-256 checked), closes FlyRoll, copies the new files over the install folder and starts it
+again. The logbook and your profiles live in `%APPDATA%\FlyRoll` and are never touched.
+The **⋯** menu has *Check for updates now* and an option to turn the startup check off; *Skip this version*
+hides a release you don't want.
+
+If FlyRoll sits in a folder it can't write to (e.g. `C:\Program Files`) or you run it from source,
+the button opens the download page instead.
+
+**Publishing a new version** (maintainer): push a tag — the workflow stamps the tag into the app version,
+builds the exe and publishes the release that every installed copy picks up:
+
+```bat
+git tag v1.2.0
+git push origin v1.2.0
+```
+
 ## Using it
 
 1. Start MSFS and load your flight; FlyRoll connects automatically (green **Connected** pill) and shows the detected profile.

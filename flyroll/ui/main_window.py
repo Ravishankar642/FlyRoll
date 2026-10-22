@@ -23,6 +23,7 @@ from ..core.logbook import Logbook
 from ..core.profiles import LVarSpec, Profile, ProfileStore
 from ..core.session import DISCONNECTED, IDLE, RECORDING, REPLAY, ReplayOptions, Session, SessionListener
 from . import theme
+from .update_ui import UpdateController
 from .widgets import EngineGauge, Timeline, fmt_time
 
 
@@ -137,6 +138,7 @@ class MainWindow(QMainWindow):
         b.probe.connect(self._on_probe)
 
         self._shortcuts()
+        self.updates.start()
         self._refresh_logbook()
         self._on_state(DISCONNECTED)
         self._apply_options()
@@ -164,6 +166,10 @@ class MainWindow(QMainWindow):
         self.connect_btn = QPushButton("Connect")
         self.connect_btn.clicked.connect(self._toggle_connect)
         h.addWidget(self.connect_btn)
+        self.updates = UpdateController(self, lambda: self.state == RECORDING,
+                                        lambda text, level: self._on_message(text, level))
+        h.insertWidget(h.indexOf(self.aircraft_lbl), self.updates.button)
+        h.addWidget(self.updates.menu_button)
         self._fill_profile_combo()
         return h
 

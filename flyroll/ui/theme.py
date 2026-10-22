@@ -28,6 +28,13 @@ QPushButton:pressed {{ background: {BORDER}; }}
 QPushButton:disabled {{ color: #55606b; border-color: {PANEL_2}; }}
 QPushButton#rec {{ background: #3a1517; border-color: #6e2427; color: #ffd7d7; font-weight: 700; }}
 QPushButton#rec:checked {{ background: {RED}; color: white; }}
+QPushButton#update {{ background: #12301f; border-color: {ECAM_GREEN}; color: {ECAM_GREEN}; font-weight: 700; }}
+QToolButton {{ background: {PANEL_2}; border: 1px solid {BORDER}; border-radius: 7px; padding: 5px 10px; }}
+QToolButton:hover {{ border-color: {ACCENT}; }}
+QToolButton::menu-indicator {{ image: none; width: 0; }}
+QMenu {{ background: {PANEL_2}; border: 1px solid {BORDER}; padding: 4px; }}
+QMenu::item {{ padding: 6px 18px; border-radius: 4px; }}
+QMenu::item:selected {{ background: {BORDER}; }}
 QPushButton#primary {{ background: {ACCENT}; color: #1b1205; border: none; font-weight: 700; }}
 QPushButton#primary:disabled {{ background: #4a3b25; color: #8a7a60; }}
 QComboBox, QLineEdit, QDoubleSpinBox, QSpinBox {{ background: {PANEL_2}; border: 1px solid {BORDER};
@@ -51,4 +58,6 @@ QSplitter::handle {{ background: {BG}; }}
 QScrollBar:vertical {{ background: transparent; width: 10px; }}
 QScrollBar::handle:vertical {{ background: {BORDER}; border-radius: 5px; min-height: 30px; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
+/* dialogs are top-level windows: must not inherit the transparent QWidget background */
+QDialog, QMessageBox, QProgressDialog, QInputDialog, QFileDialog {{ background: {BG}; }}
 """
