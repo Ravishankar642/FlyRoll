@@ -23,7 +23,16 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt SimConnect pyinstaller pytest
+        run: pip install -r requirements.txt SimConnect pytest
+
+      # Build PyInstaller's bootloader from source with the runner's MSVC instead of
+      # using the prebuilt one: the prebuilt bootloader is shared by countless
+      # PyInstaller programs (incl. malware) and is the usual cause of antivirus
+      # false positives such as Elastic's "Malicious (moderate confidence)".
+      - name: Install PyInstaller (bootloader compiled from source)
+        env:
+          PYINSTALLER_COMPILE_BOOTLOADER: "1"
+        run: pip install --no-binary pyinstaller pyinstaller
 
       - name: Stamp version from tag
         if: github.ref_type == 'tag'
@@ -39,7 +48,9 @@ jobs:
           QT_QPA_PLATFORM: offscreen
 
       - name: Build FlyRoll.exe
-        run: pyinstaller --noconfirm FlyRoll.spec
+        run: |
+          python tools/make_version_info.py
+          pyinstaller --noconfirm FlyRoll.spec
 
       - name: Zip
         shell: pwsh

@@ -25,6 +25,12 @@ a = Analysis(
     excludes=["tkinter", "PySide6.QtWebEngineCore", "PySide6.Qt3DCore"],
 )
 pyz = PYZ(a.pure)
+# Antivirus false positives: no UPX packing, real icon and version metadata.
+# (tools/make_version_info.py writes build/version_info.txt; the CI also builds
+#  PyInstaller's bootloader from source instead of using the prebuilt one.)
+version_file = root / "build" / "version_info.txt"
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="FlyRoll", console=False,
-          icon=str(root / "assets" / "flyroll.ico") if (root / "assets" / "flyroll.ico").exists() else None)
-coll = COLLECT(exe, a.binaries, a.datas, name="FlyRoll")
+          upx=False,
+          icon=str(root / "assets" / "flyroll.ico"),
+          version=str(version_file) if version_file.exists() else None)
+coll = COLLECT(exe, a.binaries, a.datas, name="FlyRoll", upx=False)
