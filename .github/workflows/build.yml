@@ -1,15 +1,59 @@
 name: build
-on: [push, workflow_dispatch]
+
+# Every push builds FlyRoll.exe and keeps it as a workflow artifact.
+# Pushing a version tag (v1.0.0, v1.1.0 ...) also creates a GitHub Release
+# with FlyRoll-<tag>-windows.zip attached.
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to create the release
+
 jobs:
   windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - run: pip install -r requirements.txt SimConnect pyinstaller pytest
-      - run: python -m pytest tests -q
-        env: { QT_QPA_PLATFORM: offscreen }
-      - run: pyinstaller --noconfirm FlyRoll.spec
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt SimConnect pyinstaller pytest
+
+      - name: Run tests
+        run: python -m pytest tests -q
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+      - name: Build FlyRoll.exe
+        run: pyinstaller --noconfirm FlyRoll.spec
+
+      - name: Zip
+        shell: pwsh
+        run: |
+          $name = if ("${{ github.ref_type }}" -eq "tag") { "FlyRoll-${{ github.ref_name }}-windows.zip" } else { "FlyRoll-windows.zip" }
+          Compress-Archive -Path dist/FlyRoll -DestinationPath $name
+          "ZIP_NAME=$name" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - uses: actions/upload-artifact@v4
-        with: { name: FlyRoll-windows, path: dist/FlyRoll }
+        with:
+          name: FlyRoll-windows
+          path: ${{ env.ZIP_NAME }}
+
+      - name: Publish release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: FlyRoll ${{ github.ref_name }}
+          files: ${{ env.ZIP_NAME }}
+          body: |
+            **Download `${{ env.ZIP_NAME }}`**, extract it anywhere and run `FlyRoll\FlyRoll.exe`
+            (MSFS 2020 / 2024 must be running). No Python needed.
+
+            Try it without the simulator: `FlyRoll.exe --demo fenix`.
+            See the README for what's recorded and the aircraft profiles.
