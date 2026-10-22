@@ -1,0 +1,15 @@
+{
+  "id": "inibuilds-a300",
+  "name": "iniBuilds A300 / A310",
+  "match": [
+    "inibuilds+a300",
+    "inibuilds+a310",
+    "inibuilds+300",
+    "inibuilds+310"
+  ],
+  "throttle_method": "axis",
+  "write_throttle_simvar": false,
+  "spool": "assist",
+  "engine_autostart": false,
+  "notes": "Same approach as the other iniBuilds airliners: hardware axis replay + N1 assist."
+}

@@ -1,0 +1,16 @@
+{
+  "id": "inibuilds-a340",
+  "name": "iniBuilds A340 (A340-300 / A340-600)",
+  "match": [
+    "inibuilds+a340",
+    "inibuilds+340"
+  ],
+  "throttle_method": "axis",
+  "throttle_lvars": [],
+  "write_throttle_simvar": false,
+  "spool": "assist",
+  "engine_autostart": false,
+  "lvars": [],
+  "notes": "iniBuilds thrust levers run through the aircraft's own calibrated throttle logic, so FlyRoll records your raw throttle axis input and re-sends it during replay (method 'axis'), and keeps N1/N2 in sync with the recording (spool 'assist'). Record with your hardware throttle bound to the standard 'Throttle axis' / 'Throttle 1-4 axis' bindings and don't touch it during replay. If you know the aircraft's thrust-lever LVars (Developer Mode > Tools > Behaviors > LocalVariables, filter 'INI'), add them as throttle LVars and switch the method to 'lvar'. Flight controls are not replayed: the fly-by-wire computers treat a replayed stick input as a roll/pitch-rate demand and, with the aircraft held by the replay, drive ailerons and roll spoilers to full deflection on one side.",
+  "replay_controls": false
+}

@@ -1,0 +1,36 @@
+{
+  "id": "flybywire-a380x",
+  "name": "FlyByWire A380X",
+  "match": [
+    "a380x",
+    "flybywire+380"
+  ],
+  "throttle_method": "axis",
+  "write_throttle_simvar": false,
+  "spool": "assist",
+  "engine_autostart": false,
+  "lvars": [
+    {
+      "name": "L:A32NX_AUTOTHRUST_TLA:1",
+      "replay": "off",
+      "note": "thrust lever angle, record only"
+    },
+    {
+      "name": "L:A32NX_AUTOTHRUST_TLA:2",
+      "replay": "off",
+      "note": "thrust lever angle, record only"
+    },
+    {
+      "name": "L:A32NX_AUTOTHRUST_TLA:3",
+      "replay": "off",
+      "note": "thrust lever angle, record only"
+    },
+    {
+      "name": "L:A32NX_AUTOTHRUST_TLA:4",
+      "replay": "off",
+      "note": "thrust lever angle, record only"
+    }
+  ],
+  "notes": "Axis replay + N1 assist, 4 engines. Flight controls are not replayed: the fly-by-wire computers treat a replayed stick input as a roll/pitch-rate demand and, with the aircraft held by the replay, drive ailerons and roll spoilers to full deflection on one side.",
+  "replay_controls": false
+}

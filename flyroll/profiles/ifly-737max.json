@@ -1,0 +1,17 @@
+{
+  "id": "ifly-737max",
+  "name": "iFly 737 MAX 8",
+  "match": [
+    "ifly",
+    "737 max+ifly",
+    "b38m+ifly"
+  ],
+  "throttle_method": "axis",
+  "throttle_lvars": [],
+  "write_throttle_simvar": true,
+  "spool": "assist",
+  "engine_autostart": false,
+  "replay_controls": true,
+  "lvars": [],
+  "notes": "Conventional (non fly-by-wire) controls, so control-surface replay stays on. Thrust levers are replayed from your recorded hardware throttle axis with the throttle simvar as fallback; N1/N2 assist covers autothrottle segments. Start the replay with the engines running."
+}

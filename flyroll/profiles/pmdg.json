@@ -1,0 +1,12 @@
+{
+  "id": "pmdg",
+  "name": "PMDG 737 / 777",
+  "match": [
+    "pmdg"
+  ],
+  "throttle_method": "axis",
+  "write_throttle_simvar": true,
+  "spool": "assist",
+  "engine_autostart": false,
+  "notes": "PMDG levers accept the standard throttle events; axis replay with simvar fallback."
+}

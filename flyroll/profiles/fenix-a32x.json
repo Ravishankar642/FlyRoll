@@ -1,0 +1,22 @@
+{
+  "id": "fenix-a32x",
+  "name": "Fenix A319 / A320 / A321",
+  "match": [
+    "fenix",
+    "fnx-aircraft",
+    "fnx32",
+    "fnx319",
+    "fnx321"
+  ],
+  "throttle_method": "lvar",
+  "throttle_lvars": [
+    "L:A_FC_THROTTLE_LEFT_INPUT",
+    "L:A_FC_THROTTLE_RIGHT_INPUT"
+  ],
+  "write_throttle_simvar": false,
+  "spool": "assist",
+  "engine_autostart": false,
+  "lvars": [],
+  "notes": "Fenix thrust levers are driven by L:A_FC_THROTTLE_LEFT_INPUT / RIGHT_INPUT (0 = full reverse, 1 = idle reverse, 2 = idle, 3 = CLB, 4 = FLX/MCT, 5 = TOGA). Start the replay with the engines running - ENGINE_AUTO_START is ignored by the Fenix. Add more LVars (switches, lights) from Developer Mode > Tools > Behaviors > LocalVariables with the LVar tester. Flight controls are not replayed: the fly-by-wire computers treat a replayed stick input as a roll/pitch-rate demand and, with the aircraft held by the replay, drive ailerons and roll spoilers to full deflection on one side.",
+  "replay_controls": false
+}

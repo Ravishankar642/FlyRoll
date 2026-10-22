@@ -1,0 +1,27 @@
+{
+  "id": "flybywire-a32nx",
+  "name": "FlyByWire A32NX",
+  "match": [
+    "flybywire+a32nx",
+    "a32nx",
+    "flybywire+320"
+  ],
+  "throttle_method": "axis",
+  "write_throttle_simvar": false,
+  "spool": "assist",
+  "engine_autostart": false,
+  "lvars": [
+    {
+      "name": "L:A32NX_AUTOTHRUST_TLA:1",
+      "replay": "off",
+      "note": "thrust lever angle, record only"
+    },
+    {
+      "name": "L:A32NX_AUTOTHRUST_TLA:2",
+      "replay": "off",
+      "note": "thrust lever angle, record only"
+    }
+  ],
+  "notes": "The A32NX maps hardware throttle input through its own detent calibration, so axis replay is used. Flight controls are not replayed: the fly-by-wire computers treat a replayed stick input as a roll/pitch-rate demand and, with the aircraft held by the replay, drive ailerons and roll spoilers to full deflection on one side.",
+  "replay_controls": false
+}

@@ -1,0 +1,14 @@
+{
+  "id": "inibuilds-a330",
+  "name": "A330 (iniBuilds / MSFS 2024)",
+  "match": [
+    "inibuilds+330",
+    "a330+ini"
+  ],
+  "throttle_method": "axis",
+  "write_throttle_simvar": false,
+  "spool": "assist",
+  "engine_autostart": false,
+  "notes": "Hardware axis replay + N1 assist. Flight controls are not replayed: the fly-by-wire computers treat a replayed stick input as a roll/pitch-rate demand and, with the aircraft held by the replay, drive ailerons and roll spoilers to full deflection on one side.",
+  "replay_controls": false
+}

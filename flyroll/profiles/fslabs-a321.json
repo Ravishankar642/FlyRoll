@@ -1,0 +1,18 @@
+{
+  "id": "fslabs-a321",
+  "name": "FSLabs A321 (A321SL / A321neo)",
+  "match": [
+    "fslabs",
+    "fsl+a321",
+    "fsl+a320",
+    "fsl+a319"
+  ],
+  "throttle_method": "axis",
+  "throttle_lvars": [],
+  "write_throttle_simvar": false,
+  "spool": "assist",
+  "engine_autostart": false,
+  "replay_controls": false,
+  "lvars": [],
+  "notes": "FSLabs runs its own FADEC and thrust-lever logic, so FlyRoll re-sends your recorded hardware throttle axis input (method 'axis') and keeps N1/N2 matched (spool 'assist'). Bind your throttle to the standard throttle axes and don't move it during replay. If you identify the thrust-lever LVars in Developer Mode > Tools > Behaviors, add them with the LVar tester and switch to 'lvar'. Flight controls are not replayed: the fly-by-wire computers treat a replayed stick input as a roll/pitch-rate demand and, with the aircraft held by the replay, drive ailerons and roll spoilers to full deflection on one side."
+}
