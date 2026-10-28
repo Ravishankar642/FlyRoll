@@ -53,6 +53,18 @@ def fenix_lever_to_percent(v: float) -> float:
     return (v - 2.0) / 3.0 * 100.0 if v >= 2.0 else (v - 2.0) / 2.0 * 100.0
 
 
+def fenix_lever_to_n1(v: float) -> float:
+    """Manual-thrust N1 for a Fenix lever position (A/THR off).
+
+    Like the real aircraft: between IDLE (2) and CLB (3) the lever sets N1
+    proportionally; FLX/MCT (4) and TOGA (5) are fixed thrust; below 2 reverse."""
+    if v < 2.0:
+        return 20.0 + (2.0 - v) / 2.0 * 50.0
+    if v <= 3.0:
+        return 20.0 + (v - 2.0) * 68.0
+    return 88.0 + (min(v, 5.0) - 3.0) * 6.0
+
+
 def percent_to_fenix_lever(p: float) -> float:
     return 2.0 + p / 100.0 * 3.0 if p >= 0 else 2.0 + p / 100.0 * 2.0
 
@@ -82,6 +94,7 @@ class MockAircraft:
         self.n2 = [0.0] * 5
         self.running = [False] * 5
         self.ext_n1: Dict[int, float] = {}
+        self.athr_n1: Optional[float] = None   # A/THR active: N1 it commands when levers are in CLB
         self.writes_ignored = 0
         if self.cfg["fadec"] == "lvar":
             for name in FENIX_LEVER:
@@ -175,7 +188,10 @@ class MockAircraft:
                 self.writes_ignored += 1   # FADEC will overwrite it next frame (the Sky Dolly problem)
             self.lever[i] = value
         elif b in ("TURB ENG N1", "TURB ENG CORRECTED N1") and 1 <= i <= 4:
-            self.n1[i] = value
+            if self.cfg["fadec"] == "lvar":
+                self.writes_ignored += 1   # Fenix runs its own engine model: N1 writes don't stick
+            else:
+                self.n1[i] = value
         elif b == "TURB ENG N2" and 1 <= i <= 4:
             self.n2[i] = value
         else:
@@ -245,7 +261,16 @@ class MockAircraft:
                 # iniBuilds-like: internal lever state only changes via hardware axis input
                 self.lever[i] = self.vars.get(f"_internal_lever:{i}", 0.0)
             if self.running[i]:
-                target = 20.0 + max(self.lever[i], 0.0) * 0.8 + max(-self.lever[i], 0.0) * 0.5
+                if fadec == "lvar":
+                    lv = self.lvars.get(FENIX_LEVER[i - 1], 2.0)
+                    if self.athr_n1 is not None and 2.95 <= lv <= 3.05:
+                        target = self.athr_n1          # autothrust managing thrust in the CLB detent
+                    elif self.athr_n1 is not None and 2.0 < lv < 2.95:
+                        target = min(self.athr_n1, fenix_lever_to_n1(lv))   # lever = thrust limit
+                    else:
+                        target = fenix_lever_to_n1(lv)
+                else:
+                    target = 20.0 + max(self.lever[i], 0.0) * 0.8 + max(-self.lever[i], 0.0) * 0.5
                 self.n1[i] += (target - self.n1[i]) * min(1.0, dt / 2.5)
                 self.n2[i] += (60 + target * 0.4 - self.n2[i]) * min(1.0, dt / 2.0)
         if self.spoilers_armed and any(self.lever[i] < -5 for i in range(1, self.n_eng + 1)):

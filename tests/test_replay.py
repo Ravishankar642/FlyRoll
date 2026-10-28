@@ -146,10 +146,10 @@ def test_a380_four_engines():
 
 
 def test_spool_assist_when_levers_differ():
-    """Recorded with A/THR style N1 (levers don't explain it) -> assist writes N1."""
-    flight, _ = record("fenix")
+    """Recorded with A/THR style N1 (levers don't explain it) -> assist writes N1 (aircraft that accept it)."""
+    flight, _ = record("a350")
     opts = ReplayOptions(throttle_method="simvar", spool="assist")
-    s, b = replay_into(flight, "fenix", opts, at=30.0)
+    s, b = replay_into(flight, "a350", opts, at=30.0)
     sm = Sampler(flight)
     assert b.ac.n1[1] == pytest.approx(sm.value("eng.n1.1", s._replay_time()), abs=3.0)
 
@@ -313,3 +313,67 @@ def test_new_profiles_detected():
     assert store.detect("iFly 737-MAX8").id == "ifly-737max"
     assert store.get("fslabs-a321").replay_controls is False
     assert store.get("ifly-737max").replay_controls is True
+
+
+FENIX_L, FENIX_R = "L:A_FC_THROTTLE_LEFT_INPUT", "L:A_FC_THROTTLE_RIGHT_INPUT"
+
+
+def record_fenix_athr():
+    """TOGA -> CLB detent with autothrust holding 66 % then 58 % N1 -> idle -> reverse."""
+    s, clock, b, lst = make("fenix", pilot=False)
+    s.record()
+    def levers(v):
+        b.ac.lvars[FENIX_L] = b.ac.lvars[FENIX_R] = v
+    levers(2.0); run(s, clock, 5)
+    levers(5.0); run(s, clock, 15)                       # 5 .. 20 s  TOGA
+    levers(3.0); b.ac.athr_n1 = 66.0; run(s, clock, 20)  # 20 .. 40 s CLB detent, A/THR 66 %
+    b.ac.athr_n1 = 58.0; run(s, clock, 15)               # 40 .. 55 s A/THR 58 %
+    b.ac.athr_n1 = None; levers(2.0); run(s, clock, 10)  # 55 .. 65 s idle
+    levers(0.0); run(s, clock, 10)                       # 65 .. 75 s full reverse
+    s.stop_record(); s.step()
+    return lst.flights[0]
+
+
+def fenix_replay_n1(flight, opts, times):
+    s, clock, b, lst = make("fenix", pilot=False)
+    s.set_options(opts)
+    s.play(flight)
+    out = {}
+    elapsed = 0.0
+    for t in times:
+        run(s, clock, t - elapsed)
+        elapsed = t
+        out[t] = (b.ac.n1[1], b.ac.lvars[FENIX_L])
+    return s, b, out
+
+
+def test_fenix_autothrust_n1_reproduces_bug_without_follow():
+    flight = record_fenix_athr()
+    _, b, out = fenix_replay_n1(flight, ReplayOptions(n1_follow=False), [35.0])
+    assert out[35.0][0] > 85, "copying the CLB-detent lever gives full climb thrust (the reported problem)"
+
+
+def test_fenix_n1_follows_recording():
+    flight = record_fenix_athr()
+    sm = Sampler(flight)
+    s, b, out = fenix_replay_n1(flight, ReplayOptions(), [15.0, 35.0, 52.0, 62.0, 72.0])
+    assert s._replay_plan["follow"], "N1 follow active for the Fenix profile"
+    for t in (35.0, 52.0):
+        rec = sm.value("eng.n1.1", t)
+        assert out[t][0] == pytest.approx(rec, abs=2.5), (t, out[t], rec)
+        assert 2.0 < out[t][1] < 3.0, "lever steered below the CLB detent"
+    assert out[15.0][1] == pytest.approx(5.0) and out[15.0][0] > 95   # TOGA copied
+    assert out[62.0][1] == pytest.approx(2.0)                         # idle copied
+    assert out[72.0][1] == pytest.approx(0.0) and b.ac.lever[1] < -50  # reverse copied
+    assert b.ac.writes_ignored == 0, "no useless N1 writes on the Fenix (spool off)"
+
+
+def test_follow_resets_on_seek():
+    flight = record_fenix_athr()
+    s, clock, b, lst = make("fenix", pilot=False)
+    s.play(flight, 30.0)
+    run(s, clock, 8)
+    assert s._follow
+    s.seek(10.0)
+    s.step()
+    assert not any(st.get("active") for st in s._follow.values()) or not s._follow

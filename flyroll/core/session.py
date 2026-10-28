@@ -100,6 +100,7 @@ class ReplayOptions:
     body_velocity: str = "smoothed"    # smoothed | raw | off  (VELOCITY BODY X/Y/Z)
     rotation_rates: bool = False       # ROTATION VELOCITY BODY X/Y/Z (Sky Dolly doesn't write them either)
     wing_flex: str = "recorded"        # recorded | physics
+    n1_follow: bool = True             # steer thrust levers to the recorded N1 (autothrust segments)
     loop: bool = False
 
 
@@ -172,6 +173,7 @@ class Session(threading.Thread):
         self._failed_tags: set = set()
         self._logged_exceptions: set = set()
         self._spoiler_rearm_at: Optional[float] = None
+        self._follow: Dict[int, dict] = {}
 
         # lvar tester
         self.probe_names: List[str] = []
@@ -645,6 +647,7 @@ class Session(threading.Thread):
         self._sent.clear()
         self._cooldown.clear()
         self._spoiler_rearm_at = None
+        self._follow.clear()
 
     def _neutral_controls(self) -> None:
         """Centre the control axes FlyRoll may have moved (otherwise the last
@@ -732,7 +735,63 @@ class Session(threading.Thread):
                                  autostart=autostart, write_simvar=write_simvar, spool_ref=spool_ref,
                                  pose_keys=pose_keys, lever_keys=lever_keys, spool_keys=spool_keys,
                                  lvar_keys=lvar_keys, has_axis=has_axis, flex_keys=flex_keys,
+                                 follow=self._plan_follow(profile, method, lvar_keys, n_eng),
                                  controls=o.controls and profile.replay_controls)
+
+    def _plan_follow(self, profile: Profile, method: str, lvar_keys: List[str], n_eng: int) -> Optional[dict]:
+        f = self.flight
+        if not (self.options.n1_follow and method == "lvar" and len(profile.follow_lever_range) == 2):
+            return None
+        engines = {}
+        for i, name in enumerate(profile.throttle_lvars[:n_eng], start=1):
+            key = "lvar." + name
+            if key in lvar_keys and f.has(engine_key("n1", i)):
+                engines[key] = i
+        if not engines:
+            return None
+        lo, hi = sorted(profile.follow_lever_range)
+        n_lo, n_hi = (profile.follow_n1_range + [20.0, 88.0])[:2]
+        return dict(lo=lo, hi=hi, n_lo=n_lo, n_hi=max(n_hi, n_lo + 1.0), engines=engines)
+
+    FOLLOW_KP = 0.005     # lever units per % N1 error
+    FOLLOW_KI = 0.008     # lever units per % N1 error per second
+    FOLLOW_LEAD = 0.0     # s - extra look-ahead on the recorded N1
+    FOLLOW_SPOOL_LAG = 2.0  # s - assumed engine spool time constant for the feed-forward
+
+    def _follow_lever(self, engine: int, rec_lever: float, t: float, follow: dict) -> float:
+        """Lever command that makes live N1 track the recorded N1 (feed-forward + PI)."""
+        lo, hi = follow["lo"], follow["hi"]
+        st = self._follow.get(engine)
+        if not (math.isfinite(rec_lever) and lo + 0.02 < rec_lever <= hi + 0.05):
+            if st is not None:
+                st["active"] = False
+            return rec_lever          # idle, reverse, FLX/MCT, TOGA: copy the recorded lever
+        f = self.flight
+        t_aim = min(t + self.FOLLOW_LEAD * self.replay_speed, f.duration) if self.replay_playing else t
+        n_rec = self.sampler.value(engine_key("n1", engine), t_aim)
+        n_live = self.live.get(engine_key("n1", engine))
+        if not math.isfinite(n_rec) or n_live is None or not math.isfinite(n_live):
+            return rec_lever
+        now = self.clock()
+        if st is None:
+            st = self._follow[engine] = {"i": 0.0, "t": now, "active": True}
+        dt = max(0.0, min(now - st["t"], 0.2)) if st.get("active") else 0.0
+        st["t"], st["active"] = now, True
+        # Feed-forward aims at where the recorded N1 is heading (value + spool lag x rate):
+        # an engine lags its command, so the lever has to move before N1 does.
+        key = engine_key("n1", engine)
+        rate = (self.sampler.value(key, min(t + 0.5, f.duration)) - self.sampler.value(key, max(t - 0.5, 0.0)))
+        n_aim = n_rec + self.FOLLOW_SPOOL_LAG * rate
+        ff = lo + (n_aim - follow["n_lo"]) / (follow["n_hi"] - follow["n_lo"]) * (hi - lo)
+        err = n_rec - n_live
+        cmd_unclamped = ff + st["i"] + self.FOLLOW_KP * err
+        # The integrator learns the lever->N1 mapping error, so it only runs while the recorded
+        # N1 is steady (during spool-up/down the error is mostly engine lag, not mapping error)
+        # and the command isn't pinned against a limit in that direction (anti-windup).
+        steady = abs(rate) < 1.5
+        if steady and not ((cmd_unclamped >= hi and err > 0) or (cmd_unclamped <= lo and err < 0)):
+            st["i"] = max(-0.6, min(0.6, st["i"] + self.FOLLOW_KI * err * dt))
+        return max(lo, min(hi, ff + st["i"] + self.FOLLOW_KP * err))
 
     def _replay_tick_fallback(self) -> None:
         # Normally the replay advances on every simulator frame; if frames stop
@@ -869,6 +928,12 @@ class Session(threading.Thread):
         # levers via the aircraft's own LVars (+ any extra replayable LVars)
         if plan["lvar_keys"]:
             vals = [v(k) for k in plan["lvar_keys"]]
+            follow = plan.get("follow")
+            if follow:
+                for idx, key in enumerate(plan["lvar_keys"]):
+                    engine = follow["engines"].get(key)
+                    if engine:
+                        vals[idx] = self._follow_lever(engine, vals[idx], t, follow)
             if self._changed("_lvars", vals, 1e-4) or self._ready("_lvars_refresh", 0.5):
                 self._set_data(DEF_LVAR_WRITE, vals, "lvars")
         # levers via the recorded hardware axis input

@@ -352,6 +352,13 @@ class MainWindow(QMainWindow):
         form.addRow("Body velocities", self.vel_combo)
         form.addRow("", self.rot_check)
         form.addRow("Wing flex", self.flex_combo)
+        self.follow_check = QCheckBox("Thrust follows recorded N1 (autothrust)")
+        self.follow_check.setChecked(True)
+        self.follow_check.setToolTip("Between IDLE and CLB the thrust levers are steered so N1 matches the "
+                                     "recording, instead of copying the lever (which sat in CLB while "
+                                     "autothrust controlled N1).")
+        self.follow_check.toggled.connect(self._apply_options)
+        form.addRow("", self.follow_check)
         form.addRow("Recording rate", self.rate_spin)
         help_ = muted(
             "• Thrust-lever LVars drive the aircraft's own levers (Fenix).\n"
@@ -508,7 +515,8 @@ class MainWindow(QMainWindow):
             plan = self.session._replay_plan
             if plan:
                 self.plan_lbl.setText(f"Replay: profile {plan['profile'].name} · thrust levers via "
-                                      f"{plan['method']} · spool {plan['spool']} · {plan['engines']} engines")
+                                      f"{plan['method']}{' + N1 follow' if plan.get('follow') else ''} · "
+                                      f"spool {plan['spool']} · {plan['engines']} engines")
 
     def _on_recorded(self, flight: Flight) -> None:
         flight.meta["title"] = f"{flight.meta.get('aircraft') or 'Flight'} · {time.strftime('%d %b %H:%M')}"
@@ -612,6 +620,7 @@ class MainWindow(QMainWindow):
                           body_velocity=self.vel_combo.currentData(),
                           rotation_rates=self.rot_check.isChecked(),
                           wing_flex=self.flex_combo.currentData(),
+                          n1_follow=self.follow_check.isChecked(),
                           loop=self.loop.isChecked())
         self.session.set_options(o)
 

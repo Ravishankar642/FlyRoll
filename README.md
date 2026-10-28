@@ -98,6 +98,14 @@ Pushing the folder to GitHub also builds the exe automatically (`.github/workflo
 **Try it without the simulator:** `run.bat --demo fenix` (or `a350`, `a380`, `c172`) starts a built-in mock aircraft
 that behaves like a FADEC airliner, so you can record, replay and watch the engines spool.
 
+## Autothrust and N1 follow
+
+With autothrust the levers sit in the CLB detent while the FADEC varies N1. Copying that lever into a
+replay gives full climb thrust, so for the Fenix FlyRoll copies the lever only at idle, reverse, FLX/MCT
+and TOGA. Between IDLE and CLB it steers the lever so the live N1 follows the recorded N1 (feed-forward
+from the recorded N1 trend plus a slow correction that learns the aircraft's lever-to-N1 mapping).
+Switch it off under *Replay settings → Thrust follows recorded N1*.
+
 ## Updates
 
 FlyRoll checks GitHub for a newer release a few seconds after it starts. When one exists a green

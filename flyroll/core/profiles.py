@@ -67,6 +67,12 @@ class Profile:
     throttle_method: str = "auto"
     throttle_lvars: List[str] = field(default_factory=list)   # one per engine, recorded and written back 1:1
     write_throttle_simvar: bool = True
+    # N1 follow (lvar method): while the recorded lever sits between these two lever values
+    # (idle .. CLB detent) the lever is steered so live N1 tracks the recorded N1 instead of
+    # being copied - autothrust moves N1 without moving the levers, so a copied CLB-detent
+    # lever would give full climb thrust in the replay.
+    follow_lever_range: List[float] = field(default_factory=list)
+    follow_n1_range: List[float] = field(default_factory=lambda: [20.0, 88.0])   # N1 at those two levers
     spool: str = "assist"
     spool_tolerance: float = 1.5                      # % N1 / % RPM drift before "assist" writes
     engine_autostart: bool = True                     # ENGINE_AUTO_START / SHUTDOWN like Sky Dolly
